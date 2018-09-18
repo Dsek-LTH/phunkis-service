@@ -1,5 +1,6 @@
 package se.dsek.phunkisservice
 
+import java.time.Instant
 import java.util.Date
 
 import sangria.execution.deferred.{Fetcher, HasId}
@@ -28,7 +29,12 @@ object GQLSchema {
 
   val roleId = Argument("role", LongType)
 
-  val roleInstanceQueryType = ObjectType("Query", fields[RoleChangeDAO, Unit](
+  val startDate = Argument("startDate", LongType)
+
+  val endDate = Argument("endDate", LongType)
+  val endDate2 = Argument("relieveDate", LongType)
+
+  val roleInstanceQueryType = ObjectType("Query", fields[RoleChangeDAO[_], Unit](
     Field("currentRoles", ListType(roleType),
       description = Some("Returns all roles the user currently holds"),
       arguments = userId :: Nil,
@@ -51,9 +57,30 @@ object GQLSchema {
     ),
   ))
 
+  val roleInstanceMutationType = ObjectType("Mutation", fields[RoleChangeDAO[_], Unit](
+    Field("elect", OptionType(roleInstanceType),
+      description = Some("Make a user have a role that they were elected to hold"),
+      arguments = startDate :: endDate :: roleId :: userId :: Nil,
+      resolve = c => c.ctx.insertInstance(
+        RoleInstance(c.arg(roleId), c.arg(userId), Date.from(Instant.ofEpochSecond(c.arg(startDate))),
+          Date.from(Instant.ofEpochSecond(c.arg(endDate)))
+        )
+      ).toOption
+    ),
+    Field("relieve", BooleanType,
+      description = Some("Remove a user from role that they were relived of"),
+      arguments = endDate2 :: startDate :: endDate :: roleId :: userId :: Nil,
+      resolve = c => c.ctx.relieveWorker(
+        RoleInstance(c.arg(roleId), c.arg(userId), Date.from(Instant.ofEpochSecond(c.arg(startDate))),
+          Date.from(Instant.ofEpochSecond(c.arg(endDate)))
+        ), Date.from(Instant.ofEpochSecond(c.arg(endDate2)))
+      )
+    ),
+  ))
+
   val mastery = Argument("mastery", OptionInputType(StringType))
 
-  val roleQueryType = ObjectType("Query", fields[RoleDAO, Unit](
+  val roleQueryType = ObjectType("Query", fields[RoleDAO[_], Unit](
     Field("allRoles", ListType(roleType),
       description = Some("All roles that have ever existed, optionally filtered by mastery"),
       arguments = mastery :: Nil,
@@ -67,5 +94,5 @@ object GQLSchema {
   ))
 
   val roleSchema = Schema(roleQueryType)
-  val roleInstanceSchema = Schema(roleInstanceQueryType)
+  val roleInstanceSchema = Schema(roleInstanceQueryType, Some(roleInstanceMutationType))
 }

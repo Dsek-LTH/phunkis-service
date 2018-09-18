@@ -22,7 +22,7 @@ class RoleDAO[N](val ctx: MysqlJdbcContext[N]) extends DBUtil[N] {
 
   @inline
   private def filterMaybeMastery(mastery: Option[String], query: Quoted[Query[Role]]) = {
-    mastery.fold(query)(m => query.filter(_.mastery == m))
+    mastery.fold(query)(m => query.filter(_.mastery == lift(m)))
   }
 }
 
