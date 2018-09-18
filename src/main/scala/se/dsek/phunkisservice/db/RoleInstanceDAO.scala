@@ -10,7 +10,7 @@ import se.dsek.phunkisservice.model.RoleInstance
 
 import scala.util.Try
 
-class RoleChangeDAO[N](val ctx: MysqlJdbcContext[N]) extends DBUtil[N] {
+class RoleInstanceDAO[N](val ctx: MysqlJdbcContext[N]) extends DBUtil[N] {
 
   import ctx._
 
@@ -50,8 +50,8 @@ class RoleChangeDAO[N](val ctx: MysqlJdbcContext[N]) extends DBUtil[N] {
   )).isSuccess
 }
 
-object RoleChangeDAO {
-  def apply(dataSource: DataSource with Closeable): RoleChangeDAO[SnakeCase] = new RoleChangeDAO(
+object RoleInstanceDAO {
+  def apply(dataSource: DataSource with Closeable): RoleInstanceDAO[SnakeCase] = new RoleInstanceDAO(
     new MysqlJdbcContext(SnakeCase, dataSource)
   )
 }

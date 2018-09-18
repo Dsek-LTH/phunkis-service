@@ -6,8 +6,8 @@ import java.util.Date
 import sangria.execution.deferred.{Fetcher, HasId}
 import sangria.schema._
 import sangria.macros.derive._
-import se.dsek.phunkisservice.db.{RoleChangeDAO, RoleDAO}
-import se.dsek.phunkisservice.model.{Role, RoleChange, RoleInstance}
+import se.dsek.phunkisservice.db.{RoleInstanceDAO, RoleDAO}
+import se.dsek.phunkisservice.model.{Role, RoleInstance}
 
 import scala.concurrent.Future
 
@@ -18,9 +18,7 @@ object GQLSchema {
   implicit val roleType = deriveObjectType[Unit, Role](
     ObjectTypeDescription("Represents a role/position members can hold within the guild")
   )
-  implicit val roleChangeType = deriveObjectType[Unit, RoleChange](
-    ObjectTypeDescription("Represents a guild member getting elected to a role, finishing their term, or getting relieved")
-  )
+
   implicit val roleInstanceType = deriveObjectType[Unit, RoleInstance](
     ObjectTypeDescription("Represents a guild member holding a position for some length of time")
   )
@@ -34,7 +32,7 @@ object GQLSchema {
   val endDate = Argument("endDate", LongType)
   val endDate2 = Argument("relieveDate", LongType)
 
-  val roleInstanceQueryType = ObjectType("Query", fields[RoleChangeDAO[_], Unit](
+  val roleInstanceQueryType = ObjectType("Query", fields[RoleInstanceDAO[_], Unit](
     Field("currentRoles", ListType(roleType),
       description = Some("Returns all roles the user currently holds"),
       arguments = userId :: Nil,
@@ -57,7 +55,7 @@ object GQLSchema {
     ),
   ))
 
-  val roleInstanceMutationType = ObjectType("Mutation", fields[RoleChangeDAO[_], Unit](
+  val roleInstanceMutationType = ObjectType("Mutation", fields[RoleInstanceDAO[_], Unit](
     Field("elect", OptionType(roleInstanceType),
       description = Some("Make a user have a role that they were elected to hold"),
       arguments = startDate :: endDate :: roleId :: userId :: Nil,

@@ -28,7 +28,7 @@ import scala.util.{Failure, Success}
 import GraphQLRequestUnmarshaller._
 import sangria.schema.Schema
 import sangria.slowlog.SlowLog
-import se.dsek.phunkisservice.db.{RoleChangeDAO, RoleDAO}
+import se.dsek.phunkisservice.db.{RoleInstanceDAO, RoleDAO}
 import com.typesafe.config.ConfigFactory
 
 import scala.reflect.internal.util.NoPosition
@@ -128,7 +128,7 @@ object Server extends App with CorsSupport {
           unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
         } ~
         path("roleInstances") {
-          unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleChangeDAO(db))
+          unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
         }
       }
     } ~
