@@ -8,33 +8,36 @@ import se.dsek.phunkisservice.model.Role
 
 import scala.util.Try
 
-class RoleDAO[N <: NamingStrategy](val ctx: MysqlJdbcContext[N]) extends DBUtil[N] {
+trait RoleDAO[N <: NamingStrategy] {
+  def allRoles(mastery: Option[String]): List[Role]
+  def activeRoles(mastery: Option[String]): List[Role]
+  def addRole(name: String, isCurrent: Boolean, mastery: String, term: String, description: String,
+              maxPeople: Option[Int]): Option[Long]
+}
+
+
+private class RoleDAOImpl(val ctx: MysqlJdbcContext[SnakeCase]) extends DBUtil[SnakeCase] with RoleDAO[SnakeCase] {
 
   import ctx._
 
   lazy private val roles = roleSchema
   lazy private val activeRoles = quote(roles.filter(_.isCurrent))
 
-  def allRoles(mastery: Option[String]): List[Role] = ctx.run(
-    filterMaybeMastery(mastery, roles)
-  )
+  override def activeRoles(mastery: Option[String]): List[Role] =
+    mastery.fold(ctx.run(activeRoles))(m => ctx.run(activeRoles.filter(_.mastery == lift(m))))
 
-  def activeRoles(mastery: Option[String]): List[Role] = ctx.run(filterMaybeMastery(mastery, activeRoles))
+  override def allRoles(mastery: Option[String]): List[Role] =
+    mastery.fold(ctx.run(roles))(m => ctx.run(roles.filter(_.mastery == lift(m))))
 
-  def addRole(name: String, isCurrent: Boolean, mastery: String, term: String, description: String,
-              maxPeople: Option[Int]): Option[Long] = Try(ctx.run(
-      roles.insert(lift(Role(0L, name, isCurrent, mastery, term, description, maxPeople)))
-        .returning(_.uid)
-    )).toOption
-
-  @inline
-  private def filterMaybeMastery(mastery: Option[String], query: Quoted[Query[Role]]) = {
-    mastery.fold(query)(m => query.filter(_.mastery == lift(m)))
-  }
+  override def addRole(name: String, isCurrent: Boolean, mastery: String, term: String, description: String,
+                       maxPeople: Option[Index]): Option[Long] = Try(ctx.run(
+    roles.insert(lift(Role(0L, name, isCurrent, mastery, term, description, maxPeople)))
+      .returning(_.uid)
+  )).toOption
 }
 
 object RoleDAO {
-  def apply(dataSource: DataSource with Closeable): RoleDAO[SnakeCase] = new RoleDAO(
+  def apply(dataSource: DataSource with Closeable): RoleDAO[SnakeCase] = new RoleDAOImpl(
     new MysqlJdbcContext(SnakeCase, dataSource)
   )
   private[db] lazy val createTable: String = """CREATE TABLE roles (

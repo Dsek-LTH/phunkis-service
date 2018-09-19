@@ -17,9 +17,6 @@ import sangria.validation.LongCoercionViolation
 import se.dsek.phunkisservice.model.{Role, RoleInstance}
 
 import scala.collection.mutable
-import sangria.marshalling.MarshallerCapability
-import sangria.validation._
-import se.dsek.phunkisservice.db.RoleDAO
 
 trait DBUtil[N <: NamingStrategy] {
   protected val ctx: MysqlJdbcContext[N]

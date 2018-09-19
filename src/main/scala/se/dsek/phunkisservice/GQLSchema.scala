@@ -5,7 +5,7 @@ import java.util.Date
 
 import sangria.schema._
 import sangria.macros.derive._
-import se.dsek.phunkisservice.db.{RoleInstanceDAO, RoleDAO}
+import se.dsek.phunkisservice.db.{RoleDAO, RoleInstanceDAO}
 import se.dsek.phunkisservice.model.{Role, RoleInstance}
 
 import scala.concurrent.Future
