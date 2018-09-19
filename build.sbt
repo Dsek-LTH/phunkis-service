@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-parser" % "0.9.3",
   "io.circe" %% "circe-optics" % "0.9.3",
 
-  "mysql" % "mysql-connector-java" % "5.1.38",
+  "mysql" % "mysql-connector-java" % "5.1.46",
   "io.getquill" %% "quill-jdbc" % "2.5.4",
 
   "com.typesafe" % "config" % "1.3.2",

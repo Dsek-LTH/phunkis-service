@@ -28,39 +28,69 @@ import scala.util.{Failure, Success}
 import GraphQLRequestUnmarshaller._
 import sangria.schema.Schema
 import sangria.slowlog.SlowLog
-import se.dsek.phunkisservice.db.{RoleInstanceDAO, RoleDAO}
+import se.dsek.phunkisservice.db.{DBUtil, RoleDAO, RoleInstanceDAO}
 import com.typesafe.config.ConfigFactory
 
 import scala.reflect.internal.util.NoPosition
 
-object Server extends App with CorsSupport {
+object PhunkisService extends CorsSupport {
+  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val system = ActorSystem("sangria-server")
   implicit val materializer = ActorMaterializer()
 
-  import system.dispatcher
+  def main(args: Array[String]): Unit = {
 
-  val config = ConfigFactory.load()
-  Class.forName("com.mysql.cj.jdbc.Driver")
-  val db: DataSource with Closeable = DBUtil.makeDataSource(
-    config.getString("mysql.url"),
-    config.getString("mysql.user"),
-    config.getString("mysql.password")
-  )
+    import system.dispatcher
+
+    val config = ConfigFactory.load()
+    Class.forName("com.mysql.jdbc.Driver").getClass
+    val db: DataSource with Closeable = DBUtil.makeDataSource(
+      config.getString("mysql.url"),
+      config.getString("mysql.user"),
+      config.getString("mysql.password")
+    )
+
+    val route: Route =
+      optionalHeaderValueByName("X-Apollo-Tracing") { tracing ⇒
+        path("graphql") {
+          get {
+            explicitlyAccepts(`text/html`) {
+              getFromResource("assets/playground.html")
+            } ~
+              unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
+          } ~ post {
+            unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
+          }
+        } ~ post {
+          path("roles") {
+            unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
+          } ~
+          path("roleInstances") {
+            unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
+          }
+        }
+      } ~
+        (get & pathEndOrSingleSlash) {
+          redirect("/graphql", PermanentRedirect)
+        }
+
+    Http().bindAndHandle(corsHandler(route), "0.0.0.0", sys.props.get("http.port").fold(8080)(_.toInt))
+  }
 
   def executeGraphQL[T, U](query: Document, operationName: Option[String], variables: Json, tracing: Boolean)
-                       (implicit schema: Schema[T, U], dao: T) =
+                          (implicit schema: Schema[T, Unit], dao: T) =
     complete(Executor.execute(schema, query, dao,
       variables = if (variables.isNull) Json.obj() else variables,
       operationName = operationName,
       middleware = if (tracing) SlowLog.apolloTracing :: Nil else Nil)
-//      deferredResolver = DeferredResolver.fetchers(SchemaDefinition.characters))
+      //      deferredResolver = DeferredResolver.fetchers(SchemaDefinition.characters))
       .map(OK → _)
       .recover {
         case error: QueryAnalysisError ⇒ BadRequest → error.resolveError
         case error: ErrorWithResolver ⇒ InternalServerError → error.resolveError
       })
 
-  def unmarshallAndExecuteQuery[T, U](implicit tracing: Option[String], schema: Schema[T, U], dao: T) =
+  def unmarshallAndExecuteQuery[T, U](implicit tracing: Option[String], schema: Schema[T, Unit], dao: T) =
     parameters('query.?, 'operationName.?, 'variables.?) { (queryParam, operationNameParam, variablesParam) ⇒
       entity(as[Json]) { body ⇒
         val query = queryParam orElse root.query.string.getOption(body)
@@ -104,37 +134,4 @@ object Server extends App with CorsSupport {
   def formatError(message: String): Json =
     Json.obj("errors" → Json.arr(Json.obj("message" → Json.fromString(message))))
 
-  val route: Route =
-    optionalHeaderValueByName("X-Apollo-Tracing") { tracing ⇒
-      path("graphql") {
-        get {
-          explicitlyAccepts(`text/html`) {
-            getFromResource("assets/playground.html")
-          } ~
-            parameters('query, 'operationName.?, 'variables.?) { (query, operationName, variables) ⇒
-              QueryParser.parse(query) match {
-                case Success(ast) ⇒
-                  variables.map(parse) match {
-                    case Some(Left(error)) ⇒ complete(BadRequest, formatError(error))
-                    case Some(Right(json)) ⇒ executeGraphQL(ast, operationName, json, tracing.isDefined)
-                    case None ⇒ executeGraphQL(ast, operationName, Json.obj(), tracing.isDefined)
-                  }
-                case Failure(error) ⇒ complete(BadRequest, formatError(error))
-              }
-            }
-        }
-      } ~ post {
-        path("roles") {
-          unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
-        } ~
-        path("roleInstances") {
-          unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
-        }
-      }
-    } ~
-      (get & pathEndOrSingleSlash) {
-        redirect("/graphql", PermanentRedirect)
-      }
-
-  Http().bindAndHandle(corsHandler(route), "0.0.0.0", sys.props.get("http.port").fold(8080)(_.toInt))
 }

@@ -12,6 +12,10 @@ import scala.concurrent.Future
 
 
 object GQLSchema {
+  import db.DBUtil._
+
+  implicit val enc = encodeDate
+  implicit val dec = decodeDate
 
   implicit val roleType = deriveObjectType[Unit, Role](
     ObjectTypeDescription("Represents a role/position members can hold within the guild")
@@ -31,7 +35,7 @@ object GQLSchema {
   val endDate2 = Argument("relieveDate", LongType)
 
   val roleInstanceQueryType = ObjectType("Query", fields[RoleInstanceDAO[_], Unit](
-    Field("currentRoles", ListType(roleType),
+    Field("currentRoles", ListType(LongType),
       description = Some("Returns all roles the user currently holds"),
       arguments = userId :: Nil,
       resolve = c => c.ctx.currentRoles(c.arg(userId))
@@ -100,9 +104,12 @@ object GQLSchema {
     Field("addRole", OptionType(LongType),
       description = Some("Add a new role. Returns generated role uid if successful."),
       arguments = name :: isCurrent :: mastery :: term :: description :: maxPeople :: Nil,
-      resolve = c => c.ctx.addRole(c.arg(name), c.arg(isCurrent), c.arg(mastery), c.arg(term),
-        c.arg(description), c.arg(maxPeople)
-      )
+      resolve = c => {
+        println(s"resolve: ${c.args.raw}")
+        c.ctx.addRole(c.arg(name), c.arg(isCurrent), c.arg(mastery), c.arg(term),
+          c.arg(description), c.arg(maxPeople)
+        )
+      }
     )
   ))
 

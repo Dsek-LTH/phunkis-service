@@ -1,4 +1,4 @@
-package se.dsek.phunkisservice
+package se.dsek.phunkisservice.db
 
 import java.io.{Closeable, PrintWriter}
 import java.sql.{Blob, CallableStatement, Clob, Connection, DatabaseMetaData, NClob, PreparedStatement, SQLWarning, SQLXML, Savepoint, Statement, Struct}
@@ -10,17 +10,21 @@ import java.util.logging.Logger
 import javax.sql.DataSource
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource
+import com.typesafe.config.ConfigFactory
 import io.getquill._
+import sangria.schema._
+import sangria.validation.LongCoercionViolation
 import se.dsek.phunkisservice.model.{Role, RoleInstance}
 
 import scala.collection.mutable
+import sangria.marshalling.MarshallerCapability
+import sangria.validation._
+import se.dsek.phunkisservice.db.RoleDAO
 
-trait DBUtil[N] {
+trait DBUtil[N <: NamingStrategy] {
   protected val ctx: MysqlJdbcContext[N]
   import ctx._
-
-  implicit val encodeDate = MappedEncoding[Date, Long](_.toInstant.getEpochSecond)
-  implicit val decodeDate = MappedEncoding[Long, Date](l => Date.from(Instant.ofEpochSecond(l)))
+  import DBUtil._
 
   implicit class DateQuotes(left: Date) {
     def >(right: Date) = quote(infix"$left > $right".as[Boolean])
@@ -34,14 +38,50 @@ trait DBUtil[N] {
 
 object DBUtil {
 
+  def main(args: Array[String]): Unit = {
+    val config = ConfigFactory.load()
+    Class.forName("com.mysql.jdbc.Driver").getClass
+    val db: DataSource with Closeable = DBUtil.makeDataSource(
+      config.getString("mysql.url"),
+      config.getString("mysql.user"),
+      config.getString("mysql.password")
+    )
+    println("Creating role table...")
+    var conn: Connection = null
+    try {
+      conn = db.getConnection()
+      val pstmt = conn.prepareStatement(RoleDAO.createTable)
+      println(pstmt.execute())
+    } finally {
+      conn.close()
+    }
+    println("Done!")
+  }
+
+  implicit val encodeDate = MappedEncoding[Date, Long](_.toInstant.getEpochSecond)
+  implicit val decodeDate = MappedEncoding[Long, Date](l => Date.from(Instant.ofEpochSecond(l)))
+
+  implicit val outputType = ScalarType[Date](name = "Date",
+    description = None,
+    coerceOutput = (t1, _) => t1.toInstant.getEpochSecond,
+    coerceUserInput = {
+      case l: Long => Right(Date.from(Instant.ofEpochSecond(l)))
+      case _ => Left(LongCoercionViolation)
+    },
+    coerceInput = {
+      case _ => Left(LongCoercionViolation)
+    }
+  )
 
   def makeDataSource(url: String, user: String, password: String): DataSource with Closeable = {
     val ds = new MysqlDataSource()
-
+    println(s"$url, $user, $password")
     ds.setURL(url)
     ds.setUser(user)
     ds.setPassword(password)
-
+    val conn = ds.getConnection
+    println(conn)
+    println(conn.close())
     new CloseableMySQLDataSource(ds)
   }
 
