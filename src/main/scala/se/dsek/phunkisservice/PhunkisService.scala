@@ -59,23 +59,23 @@ object PhunkisService extends CorsSupport {
               getFromResource("assets/playground.html")
             } ~
               unmarshallAndExecuteQuery(tracing,
-                GQLSchema.roleInstanceSchema,
-                RoleInstanceDAO(db))
+                                        GQLSchema.roleInstanceSchema,
+                                        RoleInstanceDAO(db))
           } ~ post {
             unmarshallAndExecuteQuery(tracing,
-              GQLSchema.roleInstanceSchema,
-              RoleInstanceDAO(db))
+                                      GQLSchema.roleInstanceSchema,
+                                      RoleInstanceDAO(db))
           }
         } ~ post {
           path("roles") {
             unmarshallAndExecuteQuery(tracing,
-              GQLSchema.roleSchema,
-              RoleDAO(db))
+                                      GQLSchema.roleSchema,
+                                      RoleDAO(db))
           } ~
             path("roleInstances") {
               unmarshallAndExecuteQuery(tracing,
-                GQLSchema.roleInstanceSchema,
-                RoleInstanceDAO(db))
+                                        GQLSchema.roleInstanceSchema,
+                                        RoleInstanceDAO(db))
             }
         }
       } ~
@@ -84,15 +84,15 @@ object PhunkisService extends CorsSupport {
         }
 
     Http().bindAndHandle(corsHandler(route),
-      "0.0.0.0",
-      config.getInt("http.port"))
+                         "0.0.0.0",
+                         config.getInt("http.port"))
   }
 
   def executeGraphQL[T, U](
-                            query: Document,
-                            operationName: Option[String],
-                            variables: Json,
-                            tracing: Boolean)(implicit schema: Schema[T, Unit], dao: T): Route =
+      query: Document,
+      operationName: Option[String],
+      variables: Json,
+      tracing: Boolean)(implicit schema: Schema[T, Unit], dao: T): Route =
     complete(
       Executor
         .execute(
@@ -148,14 +148,14 @@ object PhunkisService extends CorsSupport {
               case Some(Left(error)) ⇒ complete(BadRequest, formatError(error))
               case Some(Right(json)) ⇒
                 executeGraphQL(document,
-                  operationNameParam,
-                  json,
-                  tracing.isDefined)
+                               operationNameParam,
+                               json,
+                               tracing.isDefined)
               case None ⇒
                 executeGraphQL(document,
-                  operationNameParam,
-                  Json.obj(),
-                  tracing.isDefined)
+                               operationNameParam,
+                               Json.obj(),
+                               tracing.isDefined)
             }
           }
     }

@@ -22,7 +22,7 @@ trait RoleDAO[N <: NamingStrategy] {
 }
 
 private class RoleDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
-  extends DBUtil[SnakeCase]
+    extends DBUtil[SnakeCase]
     with RoleDAO[SnakeCase] {
 
   import ctx._

@@ -21,15 +21,11 @@ trait RoleInstanceDAO[N <: NamingStrategy] {
 }
 
 class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
-  extends RoleInstanceDAO[SnakeCase]
+    extends RoleInstanceDAO[SnakeCase]
     with DBUtil[SnakeCase] {
 
-//  implicit val test = ctx.dateDecoder
-  //implicit val test2 = ctx.dateEncoder
   import ctx._
   //import DBUtil._
-  //implicit val t = encodeDate
-  //implicit val u = decodeDate
 
   def currentRoles(userId: String): List[Long] = ctx.run(
     roleInstanceSchema

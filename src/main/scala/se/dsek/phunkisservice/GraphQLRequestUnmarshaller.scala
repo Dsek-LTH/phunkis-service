@@ -25,8 +25,8 @@ object GraphQLRequestUnmarshaller {
   def explicitlyAccepts(mediaType: MediaType): Directive0 =
     headerValuePF {
       case Accept(ranges)
-        if ranges.exists(
-          range ⇒ !range.isWildcard && range.matches(mediaType)) ⇒
+          if ranges.exists(
+            range ⇒ !range.isWildcard && range.matches(mediaType)) ⇒
         ranges
     }.flatMap(_ ⇒ pass)
 
@@ -37,8 +37,8 @@ object GraphQLRequestUnmarshaller {
     List(`application/graphql`)
 
   implicit def documentMarshaller(
-                                   implicit config: QueryRendererConfig = QueryRenderer.Compact)
-  : ToEntityMarshaller[Document] =
+      implicit config: QueryRendererConfig = QueryRenderer.Compact)
+    : ToEntityMarshaller[Document] =
     Marshaller.oneOf(mediaTypes: _*) { mediaType ⇒
       Marshaller.withFixedContentType(ContentType(mediaType)) { json ⇒
         HttpEntity(mediaType, QueryRenderer.render(json, config))

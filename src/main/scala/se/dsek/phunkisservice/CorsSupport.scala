@@ -12,8 +12,8 @@ trait CorsSupport {
       `Access-Control-Allow-Origin`.*,
       `Access-Control-Allow-Credentials`(true),
       `Access-Control-Allow-Headers`("Authorization",
-        "Content-Type",
-        "X-Requested-With")
+                                     "Content-Type",
+                                     "X-Requested-With")
     )
   }
 

@@ -85,9 +85,9 @@ object GQLSchema {
               s"roleInstanceElect called with arguments ${c.args.raw}")
             val o = c.ctx.insertInstance(
               RoleInstance(c.arg(roleId),
-                c.arg(userId),
-                Date.from(Instant.ofEpochSecond(c.arg(startDate))),
-                Date.from(Instant.ofEpochSecond(c.arg(endDate))))
+                           c.arg(userId),
+                           Date.from(Instant.ofEpochSecond(c.arg(startDate))),
+                           Date.from(Instant.ofEpochSecond(c.arg(endDate))))
             )
             logger.debug(s"result: $o")
             o.toOption
@@ -102,11 +102,11 @@ object GQLSchema {
           resolve = c =>
             c.ctx.relieveWorker(
               RoleInstance(c.arg(roleId),
-                c.arg(userId),
-                Date.from(Instant.ofEpochSecond(c.arg(startDate))),
-                Date.from(Instant.ofEpochSecond(c.arg(endDate)))),
+                           c.arg(userId),
+                           Date.from(Instant.ofEpochSecond(c.arg(startDate))),
+                           Date.from(Instant.ofEpochSecond(c.arg(endDate)))),
               Date.from(Instant.ofEpochSecond(c.arg(endDate2)))
-            )
+          )
         )
       )
     )
@@ -154,11 +154,11 @@ object GQLSchema {
         resolve = c => {
           logger.debug(s"addRole called with arguments: ${c.args.raw}")
           c.ctx.addRole(c.arg(name),
-            c.arg(isCurrent),
-            c.arg(mastery),
-            c.arg(term),
-            c.arg(description),
-            c.arg(maxPeople))
+                        c.arg(isCurrent),
+                        c.arg(mastery),
+                        c.arg(term),
+                        c.arg(description),
+                        c.arg(maxPeople))
         }
       )
     )
