@@ -3,6 +3,7 @@ package se.dsek.phunkisservice
 import java.time.Instant
 import java.util.Date
 
+import org.slf4j.LoggerFactory
 import sangria.schema._
 import sangria.macros.derive._
 import se.dsek.phunkisservice.db.{RoleDAO, RoleInstanceDAO}
@@ -12,10 +13,11 @@ import scala.concurrent.Future
 
 
 object GQLSchema {
+  val logger = LoggerFactory.getLogger(GQLSchema.getClass)
   import db.DBUtil._
 
-  implicit val enc = encodeDate
-  implicit val dec = decodeDate
+  //implicit val enc = encodeDate
+  //implicit val dec = decodeDate
 
   implicit val roleType = deriveObjectType[Unit, Role](
     ObjectTypeDescription("Represents a role/position members can hold within the guild")
@@ -34,7 +36,7 @@ object GQLSchema {
   val endDate = Argument("endDate", LongType)
   val endDate2 = Argument("relieveDate", LongType)
 
-  val roleInstanceQueryType = ObjectType("Query", fields[RoleInstanceDAO[_], Unit](
+  val roleInstanceQueryType: ObjectType[RoleInstanceDAO[_], Unit] = ObjectType("Query", fields[RoleInstanceDAO[_], Unit](
     Field("currentRoles", ListType(LongType),
       description = Some("Returns all roles the user currently holds"),
       arguments = userId :: Nil,
@@ -54,22 +56,21 @@ object GQLSchema {
       description = Some("Returns all users that have held this role"),
       arguments = roleId :: Nil,
       resolve = c => c.ctx.allWorkers(c.arg(roleId))
-    ),
+    )
   ))
 
-  val roleInstanceMutationType = ObjectType("Mutation", fields[RoleInstanceDAO[_], Unit](
+  val roleInstanceMutationType: ObjectType[RoleInstanceDAO[_], Unit] = ObjectType("Mutation", fields[RoleInstanceDAO[_], Unit](
     Field("elect", OptionType(roleInstanceType),
       description = Some("Make a user have a role that they were elected to hold. Returns the role instance if successful."),
       arguments = startDate :: endDate :: roleId :: userId :: Nil,
       resolve = c => {
-        println(c.args.raw)
-        println(Instant.ofEpochSecond(c.arg(startDate)))
+        logger.debug(s"roleInstanceElect called with arguments ${c.args.raw}")
         val o = c.ctx.insertInstance(
           RoleInstance(c.arg(roleId), c.arg(userId), Date.from(Instant.ofEpochSecond(c.arg(startDate))),
             Date.from(Instant.ofEpochSecond(c.arg(endDate)))
           )
         )
-        println(o)
+        logger.debug(s"result: $o")
         o.toOption
       }
     ),
@@ -81,7 +82,7 @@ object GQLSchema {
           Date.from(Instant.ofEpochSecond(c.arg(endDate)))
         ), Date.from(Instant.ofEpochSecond(c.arg(endDate2)))
       )
-    ),
+    )
   ))
 
   val maybeMastery = Argument("mastery", OptionInputType(StringType))
@@ -96,7 +97,7 @@ object GQLSchema {
       description = Some("All roles that currently exist within the guild, or in a mastery"),
       arguments = maybeMastery :: Nil,
       resolve = c => c.ctx.activeRoles(c.arg(maybeMastery))
-    ),
+    )
   ))
 
   val name = Argument("name", StringType)
@@ -111,7 +112,7 @@ object GQLSchema {
       description = Some("Add a new role. Returns generated role uid if successful."),
       arguments = name :: isCurrent :: mastery :: term :: description :: maxPeople :: Nil,
       resolve = c => {
-        println(s"resolve: ${c.args.raw}")
+        logger.debug(s"addRole called with arguments: ${c.args.raw}")
         c.ctx.addRole(c.arg(name), c.arg(isCurrent), c.arg(mastery), c.arg(term),
           c.arg(description), c.arg(maxPeople)
         )

@@ -4,6 +4,8 @@ version := "0.1"
 
 scalaVersion := "2.12.6"
 
+scapegoatVersion in ThisBuild := "1.3.8"
+
 libraryDependencies ++= Seq(
   "org.sangria-graphql" %% "sangria" % "1.4.2",
   "org.sangria-graphql" %% "sangria-slowlog" % "0.1.8",
@@ -18,8 +20,12 @@ libraryDependencies ++= Seq(
 
   "mysql" % "mysql-connector-java" % "5.1.46",
   "io.getquill" %% "quill-jdbc" % "2.5.4",
+  "org.slf4j" % "slf4j-api" % "1.7.25",
+  "org.slf4j" % "slf4j-log4j12" % "1.7.25",
 
   "com.typesafe" % "config" % "1.3.2",
+
+  "com.github.pathikrit" %% "better-files" % "3.7.0",
 
   "org.scalatest" %% "scalatest" % "3.0.5" % Test
 )

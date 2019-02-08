@@ -74,11 +74,11 @@ object PhunkisService extends CorsSupport {
           redirect("/graphql", PermanentRedirect)
         }
 
-    Http().bindAndHandle(corsHandler(route), "0.0.0.0", sys.props.get("http.port").fold(8080)(_.toInt))
+    Http().bindAndHandle(corsHandler(route), "0.0.0.0", config.getInt("http.port"))
   }
 
   def executeGraphQL[T, U](query: Document, operationName: Option[String], variables: Json, tracing: Boolean)
-                          (implicit schema: Schema[T, Unit], dao: T) =
+                          (implicit schema: Schema[T, Unit], dao: T): Route =
     complete(Executor.execute(schema, query, dao,
       variables = if (variables.isNull) Json.obj() else variables,
       operationName = operationName,
@@ -90,7 +90,7 @@ object PhunkisService extends CorsSupport {
         case error: ErrorWithResolver ⇒ InternalServerError → error.resolveError
       })
 
-  def unmarshallAndExecuteQuery[T, U](implicit tracing: Option[String], schema: Schema[T, Unit], dao: T) =
+  def unmarshallAndExecuteQuery[T, U](implicit tracing: Option[String], schema: Schema[T, Unit], dao: T): Route =
     parameters('query.?, 'operationName.?, 'variables.?) { (queryParam, operationNameParam, variablesParam) ⇒
       entity(as[Json]) { body ⇒
         val query = queryParam orElse root.query.string.getOption(body)
