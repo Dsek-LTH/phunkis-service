@@ -29,3 +29,8 @@ libraryDependencies ++= Seq(
 
   "org.scalatest" %% "scalatest" % "3.0.5" % Test
 )
+
+addCommandAlias("lint", ";scapegoat;scalastyle")
+addCommandAlias("init", "runMain se.dsek.phunkisservice.db.DBUtil")
+mainClass in (Compile, packageBin) := Some("se.dsek.phunkisservice.PhunkisService")
+mainClass in (Compile, run) := Some("se.dsek.phunkisservice.PhunkisService")
