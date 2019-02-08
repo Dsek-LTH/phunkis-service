@@ -23,7 +23,7 @@ trait RoleInstanceDAO[N <: NamingStrategy] {
 class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase]) extends RoleInstanceDAO[SnakeCase] with DBUtil[SnakeCase] {
 
 //  implicit val test = ctx.dateDecoder
-  //  implicit val test2 = ctx.dateEncoder
+  //implicit val test2 = ctx.dateEncoder
   import ctx._
   //import DBUtil._
   //implicit val t = encodeDate
@@ -71,4 +71,13 @@ object RoleInstanceDAO {
   def apply(dataSource: DataSource with Closeable): RoleInstanceDAO[SnakeCase] = new RoleInstanceDAOImpl(
     new MysqlJdbcContext(SnakeCase, dataSource)
   )
+
+  private[db] lazy val createTable =
+    """CREATE TABLE role_instances (
+      |role BIGINT unsigned NOT NULL,
+      |user VARCHAR(20) NOT NULL,
+      |start_date TIMESTAMP NOT NULL,
+      |end_date TIMESTAMP NOT NULL
+      |);
+    """.stripMargin
 }

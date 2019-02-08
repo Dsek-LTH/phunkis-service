@@ -61,11 +61,17 @@ object GQLSchema {
     Field("elect", OptionType(roleInstanceType),
       description = Some("Make a user have a role that they were elected to hold. Returns the role instance if successful."),
       arguments = startDate :: endDate :: roleId :: userId :: Nil,
-      resolve = c => c.ctx.insertInstance(
-        RoleInstance(c.arg(roleId), c.arg(userId), Date.from(Instant.ofEpochSecond(c.arg(startDate))),
-          Date.from(Instant.ofEpochSecond(c.arg(endDate)))
+      resolve = c => {
+        println(c.args.raw)
+        println(Instant.ofEpochSecond(c.arg(startDate)))
+        val o = c.ctx.insertInstance(
+          RoleInstance(c.arg(roleId), c.arg(userId), Date.from(Instant.ofEpochSecond(c.arg(startDate))),
+            Date.from(Instant.ofEpochSecond(c.arg(endDate)))
+          )
         )
-      ).toOption
+        println(o)
+        o.toOption
+      }
     ),
     Field("relieve", BooleanType,
       description = Some("Remove a user from role that they were relived of. Returns true if successful."),

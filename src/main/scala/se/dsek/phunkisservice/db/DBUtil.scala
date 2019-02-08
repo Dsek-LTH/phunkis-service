@@ -53,6 +53,15 @@ object DBUtil {
       conn.close()
     }
     println("Done!")
+    println("Creating role instance table...")
+    try {
+      conn = db.getConnection()
+      val pstmt = conn.prepareStatement(RoleInstanceDAO.createTable)
+      println(pstmt.execute())
+    } finally {
+      conn.close()
+    }
+    println("Done!")
   }
 
   implicit val encodeDate = MappedEncoding[Date, Long](_.toInstant.getEpochSecond)

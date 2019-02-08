@@ -57,9 +57,9 @@ object PhunkisService extends CorsSupport {
             explicitlyAccepts(`text/html`) {
               getFromResource("assets/playground.html")
             } ~
-              unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
+              unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
           } ~ post {
-            unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
+            unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
           }
         } ~ post {
           path("roles") {
