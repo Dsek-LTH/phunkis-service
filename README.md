@@ -18,6 +18,7 @@ We use [Scapegoat](https://github.com/sksamuel/scapegoat) and [Scalastyle](http:
 They can be run separately as `sbt scapegoat` and `sbt scalastyle`, or together as `sbt lint`.
 Run them before each commit, and fix any issues. If you disagree with the warnings, either disable them locally,
 or raise the discussion with DWWW of whether to remove that rule from the config.
+To autoformat the code, simply run `sbt phunkis-service/scalafmt`.
 
 When you run the linters they will output warnings in the console, however Scapegoat will also output
 a handy HTML report in [target/scala-2.12/scapegoat-report/scapegoat.html](target/scala-2.12/scapegoat-report/scapegoat.html), if you find it easier to read that way.

@@ -1,7 +1,20 @@
 package se.dsek.phunkisservice.db
 
 import java.io.{Closeable, PrintWriter}
-import java.sql.{Blob, CallableStatement, Clob, Connection, DatabaseMetaData, NClob, PreparedStatement, SQLWarning, SQLXML, Savepoint, Statement, Struct}
+import java.sql.{
+  Blob,
+  CallableStatement,
+  Clob,
+  Connection,
+  DatabaseMetaData,
+  NClob,
+  PreparedStatement,
+  SQLWarning,
+  SQLXML,
+  Savepoint,
+  Statement,
+  Struct
+}
 import java.time.Instant
 import java.{sql, util}
 import java.util.{Date, Properties}
@@ -34,12 +47,13 @@ trait DBUtil[N <: NamingStrategy] {
     // scalastyle:on
   }
 
-  val roleSchema = quote(querySchema[Role]("roles"))
-  val roleInstanceSchema = quote(querySchema[RoleInstance]("role_instances"))
+  val roleSchema: Quoted[EntityQuery[Role]] = quote(querySchema[Role]("roles"))
+  val roleInstanceSchema: Quoted[EntityQuery[RoleInstance]] = quote(
+    querySchema[RoleInstance]("role_instances"))
 }
 
 object DBUtil {
-  val logger = LoggerFactory.getLogger(DBUtil.getClass)
+  private val logger = LoggerFactory.getLogger(DBUtil.getClass)
 
   def main(args: Array[String]): Unit = {
     val config = ConfigFactory.load()
@@ -61,10 +75,13 @@ object DBUtil {
     }
   }
 
-  implicit val encodeDate = MappedEncoding[Date, Long](_.toInstant.getEpochSecond)
-  implicit val decodeDate = MappedEncoding[Long, Date](l => Date.from(Instant.ofEpochSecond(l)))
+  implicit val encodeDate: MappedEncoding[Date, Long] =
+    MappedEncoding[Date, Long](_.toInstant.getEpochSecond)
+  implicit val decodeDate: MappedEncoding[Long, Date] =
+    MappedEncoding[Long, Date](l => Date.from(Instant.ofEpochSecond(l)))
 
-  implicit val outputType = ScalarType[Date](name = "Date",
+  implicit val outputType: ScalarType[Date] = ScalarType[Date](
+    name = "Date",
     description = None,
     coerceOutput = (t1, _) => t1.toInstant.getEpochSecond,
     coerceUserInput = {
@@ -76,7 +93,9 @@ object DBUtil {
     }
   )
 
-  def makeDataSource(url: String, user: String, password: String): DataSource with Closeable = {
+  def makeDataSource(url: String,
+                     user: String,
+                     password: String): DataSource with Closeable = {
     val ds = new MysqlDataSource()
     ds.setURL(url)
     ds.setUser(user)
@@ -89,25 +108,32 @@ object DBUtil {
     new CloseableMySQLDataSource(ds)
   }
 
-  class CloseableMySQLDataSource(ds: DataSource) extends DataSource with Closeable {
+  class CloseableMySQLDataSource(ds: DataSource)
+    extends DataSource
+      with Closeable {
     private val conns = mutable.Set.empty[Connection]
 
     var open: Boolean = true
 
     override def getConnection: Connection = {
-      if(!open) {
-        throw new IllegalStateException("Tried getting new connection from closed data source")
+      if (!open) {
+        throw new IllegalStateException(
+          "Tried getting new connection from closed data source")
       }
       val conn = new CentrallyCloseableConnection(ds.getConnection, this)
       conns += conn
       conn
     }
 
-    override def getConnection(username: String, password: String): Connection = {
-      if(!open) {
-        throw new IllegalStateException("Tried getting new connection from closed data source")
+    override def getConnection(username: String,
+                               password: String): Connection = {
+      if (!open) {
+        throw new IllegalStateException(
+          "Tried getting new connection from closed data source")
       }
-      val conn = new CentrallyCloseableConnection(ds.getConnection(username, password), this)
+      val conn = new CentrallyCloseableConnection(
+        ds.getConnection(username, password),
+        this)
       conns += conn
       conn
     }
@@ -116,7 +142,8 @@ object DBUtil {
 
     override def isWrapperFor(iface: Class[_]): Boolean = ds.isWrapperFor(iface)
 
-    override def setLoginTimeout(seconds: Int): Unit = ds.setLoginTimeout(seconds)
+    override def setLoginTimeout(seconds: Int): Unit =
+      ds.setLoginTimeout(seconds)
 
     override def setLogWriter(out: PrintWriter): Unit = ds.setLogWriter(out)
 
@@ -135,36 +162,60 @@ object DBUtil {
   }
 
   // scalastyle:off
-  class CentrallyCloseableConnection(conn: Connection, central: CloseableMySQLDataSource) extends Connection {
+  class CentrallyCloseableConnection(conn: Connection,
+                                     central: CloseableMySQLDataSource)
+    extends Connection {
     override def commit(): Unit = conn.commit()
 
     override def getHoldability: Int = conn.getHoldability
 
     override def setCatalog(catalog: String): Unit = conn.setCatalog(catalog)
 
-    override def setHoldability(holdability: Int): Unit = conn.setHoldability(holdability)
+    override def setHoldability(holdability: Int): Unit =
+      conn.setHoldability(holdability)
 
-    override def prepareStatement(sql: String): PreparedStatement = conn.prepareStatement(sql)
+    override def prepareStatement(sql: String): PreparedStatement =
+      conn.prepareStatement(sql)
 
-    override def prepareStatement(sql: String, resultSetType: Int, resultSetConcurrency: Int): PreparedStatement =
+    override def prepareStatement(
+                                   sql: String,
+                                   resultSetType: Int,
+                                   resultSetConcurrency: Int): PreparedStatement =
       conn.prepareStatement(sql, resultSetType, resultSetConcurrency)
 
-    override def prepareStatement(sql: String, resultSetType: Int, resultSetConcurrency: Int, resultSetHoldability: Int): PreparedStatement =
-      conn.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability)
+    override def prepareStatement(
+                                   sql: String,
+                                   resultSetType: Int,
+                                   resultSetConcurrency: Int,
+                                   resultSetHoldability: Int): PreparedStatement =
+      conn.prepareStatement(sql,
+        resultSetType,
+        resultSetConcurrency,
+        resultSetHoldability)
 
-    override def prepareStatement(sql: String, autoGeneratedKeys: Int): PreparedStatement = conn.prepareStatement(sql, autoGeneratedKeys)
+    override def prepareStatement(sql: String,
+                                  autoGeneratedKeys: Int): PreparedStatement =
+      conn.prepareStatement(sql, autoGeneratedKeys)
 
-    override def prepareStatement(sql: String, columnIndexes: Array[Int]): PreparedStatement = conn.prepareStatement(sql, columnIndexes)
+    override def prepareStatement(
+                                   sql: String,
+                                   columnIndexes: Array[Int]): PreparedStatement =
+      conn.prepareStatement(sql, columnIndexes)
 
-    override def prepareStatement(sql: String, columnNames: Array[String]): PreparedStatement = conn.prepareStatement(sql, columnNames)
+    override def prepareStatement(
+                                   sql: String,
+                                   columnNames: Array[String]): PreparedStatement =
+      conn.prepareStatement(sql, columnNames)
 
     override def createClob(): Clob = conn.createClob()
 
     override def setSchema(schema: String): Unit = conn.setSchema(schema)
 
-    override def setClientInfo(name: String, value: String): Unit = conn.setClientInfo(name, value)
+    override def setClientInfo(name: String, value: String): Unit =
+      conn.setClientInfo(name, value)
 
-    override def setClientInfo(properties: Properties): Unit = conn.setClientInfo(properties)
+    override def setClientInfo(properties: Properties): Unit =
+      conn.setClientInfo(properties)
 
     override def createSQLXML(): SQLXML = conn.createSQLXML()
 
@@ -174,39 +225,59 @@ object DBUtil {
 
     override def createStatement(): Statement = conn.createStatement()
 
-    override def createStatement(resultSetType: Int, resultSetConcurrency: Int): Statement =
+    override def createStatement(resultSetType: Int,
+                                 resultSetConcurrency: Int): Statement =
       conn.createStatement(resultSetType, resultSetConcurrency)
 
-    override def createStatement(resultSetType: Int, resultSetConcurrency: Int, resultSetHoldability: Int): Statement =
-      conn.createStatement(resultSetType, resultSetConcurrency, resultSetHoldability)
+    override def createStatement(resultSetType: Int,
+                                 resultSetConcurrency: Int,
+                                 resultSetHoldability: Int): Statement =
+      conn.createStatement(resultSetType,
+        resultSetConcurrency,
+        resultSetHoldability)
 
     override def abort(executor: Executor): Unit = conn.abort(executor)
 
-    override def setAutoCommit(autoCommit: Boolean): Unit = conn.setAutoCommit(autoCommit)
+    override def setAutoCommit(autoCommit: Boolean): Unit =
+      conn.setAutoCommit(autoCommit)
 
     override def getMetaData: DatabaseMetaData = conn.getMetaData
 
-    override def setReadOnly(readOnly: Boolean): Unit = conn.setReadOnly(readOnly)
+    override def setReadOnly(readOnly: Boolean): Unit =
+      conn.setReadOnly(readOnly)
 
-    override def prepareCall(sql: String): CallableStatement = conn.prepareCall(sql)
+    override def prepareCall(sql: String): CallableStatement =
+      conn.prepareCall(sql)
 
-    override def prepareCall(sql: String, resultSetType: Int, resultSetConcurrency: Int): CallableStatement =
+    override def prepareCall(sql: String,
+                             resultSetType: Int,
+                             resultSetConcurrency: Int): CallableStatement =
       conn.prepareCall(sql, resultSetType, resultSetConcurrency)
 
-    override def prepareCall(sql: String, resultSetType: Int, resultSetConcurrency: Int, resultSetHoldability: Int): CallableStatement =
-      conn.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability)
+    override def prepareCall(sql: String,
+                             resultSetType: Int,
+                             resultSetConcurrency: Int,
+                             resultSetHoldability: Int): CallableStatement =
+      conn.prepareCall(sql,
+        resultSetType,
+        resultSetConcurrency,
+        resultSetHoldability)
 
-    override def setTransactionIsolation(level: Int): Unit = conn.setTransactionIsolation(level)
+    override def setTransactionIsolation(level: Int): Unit =
+      conn.setTransactionIsolation(level)
 
     override def getWarnings: SQLWarning = conn.getWarnings
 
-    override def releaseSavepoint(savepoint: Savepoint): Unit = conn.releaseSavepoint(savepoint)
+    override def releaseSavepoint(savepoint: Savepoint): Unit =
+      conn.releaseSavepoint(savepoint)
 
     override def nativeSQL(sql: String): String = conn.nativeSQL(sql)
 
     override def isReadOnly: Boolean = conn.isReadOnly
 
-    override def createArrayOf(typeName: String, elements: Array[AnyRef]): sql.Array = conn.createArrayOf(typeName, elements)
+    override def createArrayOf(typeName: String,
+                               elements: Array[AnyRef]): sql.Array =
+      conn.createArrayOf(typeName, elements)
 
     override def setSavepoint(): Savepoint = conn.setSavepoint()
 
@@ -223,9 +294,12 @@ object DBUtil {
 
     override def rollback(savepoint: Savepoint): Unit = conn.rollback(savepoint)
 
-    override def setNetworkTimeout(executor: Executor, milliseconds: Int): Unit = conn.setNetworkTimeout(executor, milliseconds)
+    override def setNetworkTimeout(executor: Executor,
+                                   milliseconds: Int): Unit =
+      conn.setNetworkTimeout(executor, milliseconds)
 
-    override def setTypeMap(map: util.Map[String, Class[_]]): Unit = conn.setTypeMap(map)
+    override def setTypeMap(map: util.Map[String, Class[_]]): Unit =
+      conn.setTypeMap(map)
 
     override def isValid(timeout: Int): Boolean = conn.isValid(timeout)
 
@@ -241,7 +315,9 @@ object DBUtil {
 
     override def getTransactionIsolation: Int = conn.getTransactionIsolation
 
-    override def createStruct(typeName: String, attributes: Array[AnyRef]): Struct = conn.createStruct(typeName, attributes)
+    override def createStruct(typeName: String,
+                              attributes: Array[AnyRef]): Struct =
+      conn.createStruct(typeName, attributes)
 
     override def getClientInfo(name: String): String = conn.getClientInfo(name)
 
@@ -251,7 +327,8 @@ object DBUtil {
 
     override def unwrap[T](iface: Class[T]): T = conn.unwrap(iface)
 
-    override def isWrapperFor(iface: Class[_]): Boolean = conn.isWrapperFor(iface)
+    override def isWrapperFor(iface: Class[_]): Boolean =
+      conn.isWrapperFor(iface)
   }
 
   // scalastyle:on

@@ -35,8 +35,9 @@ import scala.reflect.internal.util.NoPosition
 
 object PhunkisService extends CorsSupport {
   import scala.concurrent.ExecutionContext.Implicits.global
-  implicit val system = ActorSystem("sangria-server")
-  implicit val materializer = ActorMaterializer()
+
+  implicit val system: ActorSystem = ActorSystem("sangria-server")
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   def main(args: Array[String]): Unit = {
 
@@ -57,74 +58,118 @@ object PhunkisService extends CorsSupport {
             explicitlyAccepts(`text/html`) {
               getFromResource("assets/playground.html")
             } ~
-              unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
+              unmarshallAndExecuteQuery(tracing,
+                GQLSchema.roleInstanceSchema,
+                RoleInstanceDAO(db))
           } ~ post {
-            unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
+            unmarshallAndExecuteQuery(tracing,
+              GQLSchema.roleInstanceSchema,
+              RoleInstanceDAO(db))
           }
         } ~ post {
           path("roles") {
-            unmarshallAndExecuteQuery(tracing, GQLSchema.roleSchema, RoleDAO(db))
+            unmarshallAndExecuteQuery(tracing,
+              GQLSchema.roleSchema,
+              RoleDAO(db))
           } ~
-          path("roleInstances") {
-            unmarshallAndExecuteQuery(tracing, GQLSchema.roleInstanceSchema, RoleInstanceDAO(db))
-          }
+            path("roleInstances") {
+              unmarshallAndExecuteQuery(tracing,
+                GQLSchema.roleInstanceSchema,
+                RoleInstanceDAO(db))
+            }
         }
       } ~
         (get & pathEndOrSingleSlash) {
           redirect("/graphql", PermanentRedirect)
         }
 
-    Http().bindAndHandle(corsHandler(route), "0.0.0.0", config.getInt("http.port"))
+    Http().bindAndHandle(corsHandler(route),
+      "0.0.0.0",
+      config.getInt("http.port"))
   }
 
-  def executeGraphQL[T, U](query: Document, operationName: Option[String], variables: Json, tracing: Boolean)
-                          (implicit schema: Schema[T, Unit], dao: T): Route =
-    complete(Executor.execute(schema, query, dao,
-      variables = if (variables.isNull) Json.obj() else variables,
-      operationName = operationName,
-      middleware = if (tracing) SlowLog.apolloTracing :: Nil else Nil)
-      //      deferredResolver = DeferredResolver.fetchers(SchemaDefinition.characters))
-      .map(OK → _)
-      .recover {
-        case error: QueryAnalysisError ⇒ BadRequest → error.resolveError
-        case error: ErrorWithResolver ⇒ InternalServerError → error.resolveError
-      })
+  def executeGraphQL[T, U](
+                            query: Document,
+                            operationName: Option[String],
+                            variables: Json,
+                            tracing: Boolean)(implicit schema: Schema[T, Unit], dao: T): Route =
+    complete(
+      Executor
+        .execute(
+          schema,
+          query,
+          dao,
+          variables = if (variables.isNull) Json.obj() else variables,
+          operationName = operationName,
+          middleware =
+            if (tracing) SlowLog.apolloTracing :: Nil
+            else Nil
+        )
+        //      deferredResolver = DeferredResolver.fetchers(SchemaDefinition.characters))
+        .map(OK → _)
+        .recover {
+          case error: QueryAnalysisError ⇒ BadRequest → error.resolveError
+          case error: ErrorWithResolver ⇒
+            InternalServerError → error.resolveError
+        })
 
-  def unmarshallAndExecuteQuery[T, U](implicit tracing: Option[String], schema: Schema[T, Unit], dao: T): Route =
-    parameters('query.?, 'operationName.?, 'variables.?) { (queryParam, operationNameParam, variablesParam) ⇒
-      entity(as[Json]) { body ⇒
-        val query = queryParam orElse root.query.string.getOption(body)
-        val operationName = operationNameParam orElse root.operationName.string.getOption(body)
-        val variablesStr = variablesParam orElse root.variables.string.getOption(body)
+  def unmarshallAndExecuteQuery[T, U](implicit tracing: Option[String],
+                                      schema: Schema[T, Unit],
+                                      dao: T): Route =
+    parameters('query.?, 'operationName.?, 'variables.?) {
+      (queryParam, operationNameParam, variablesParam) ⇒
+        entity(as[Json]) { body ⇒
+          val query = queryParam orElse root.query.string.getOption(body)
+          val operationName = operationNameParam orElse root.operationName.string
+            .getOption(body)
+          val variablesStr = variablesParam orElse root.variables.string
+            .getOption(body)
 
-        query.map(QueryParser.parse(_)) match {
-          case Some(Success(ast)) ⇒
-            variablesStr.map(parse) match {
-              case Some(Left(error)) ⇒ complete(BadRequest, formatError(error))
-              case Some(Right(json)) ⇒ executeGraphQL(ast, operationName, json, tracing.isDefined)
-              case None ⇒ executeGraphQL(ast, operationName, root.variables.json.getOption(body) getOrElse Json.obj(), tracing.isDefined)
-            }
-          case Some(Failure(error)) ⇒ complete(BadRequest, formatError(error))
-          case None ⇒ complete(BadRequest, formatError("No query to execute"))
-        }
-      } ~
-        entity(as[Document]) { document ⇒
-          variablesParam.map(parse) match {
-            case Some(Left(error)) ⇒ complete(BadRequest, formatError(error))
-            case Some(Right(json)) ⇒ executeGraphQL(document, operationNameParam, json, tracing.isDefined)
-            case None ⇒ executeGraphQL(document, operationNameParam, Json.obj(), tracing.isDefined)
+          query.map(QueryParser.parse(_)) match {
+            case Some(Success(ast)) ⇒
+              variablesStr.map(parse) match {
+                case Some(Left(error)) ⇒
+                  complete(BadRequest, formatError(error))
+                case Some(Right(json)) ⇒
+                  executeGraphQL(ast, operationName, json, tracing.isDefined)
+                case None ⇒
+                  executeGraphQL(
+                    ast,
+                    operationName,
+                    root.variables.json.getOption(body) getOrElse Json.obj(),
+                    tracing.isDefined)
+              }
+            case Some(Failure(error)) ⇒ complete(BadRequest, formatError(error))
+            case None ⇒ complete(BadRequest, formatError("No query to execute"))
           }
-        }
+        } ~
+          entity(as[Document]) { document ⇒
+            variablesParam.map(parse) match {
+              case Some(Left(error)) ⇒ complete(BadRequest, formatError(error))
+              case Some(Right(json)) ⇒
+                executeGraphQL(document,
+                  operationNameParam,
+                  json,
+                  tracing.isDefined)
+              case None ⇒
+                executeGraphQL(document,
+                  operationNameParam,
+                  Json.obj(),
+                  tracing.isDefined)
+            }
+          }
     }
 
   def formatError(error: Throwable): Json = error match {
     case syntaxError: SyntaxError ⇒
-      Json.obj("errors" → Json.arr(
-        Json.obj(
+      Json.obj(
+        "errors" → Json.arr(Json.obj(
           "message" → Json.fromString(syntaxError.getMessage),
           "locations" → Json.arr(Json.obj(
             "line" → Json.fromBigInt(syntaxError.originalError.position.line),
-            "column" → Json.fromBigInt(syntaxError.originalError.position.column))))))
+            "column" → Json.fromBigInt(
+              syntaxError.originalError.position.column)))
+        )))
     case NonFatal(e) ⇒
       formatError(e.getMessage)
     case e ⇒
@@ -132,6 +177,7 @@ object PhunkisService extends CorsSupport {
   }
 
   def formatError(message: String): Json =
-    Json.obj("errors" → Json.arr(Json.obj("message" → Json.fromString(message))))
+    Json.obj(
+      "errors" → Json.arr(Json.obj("message" → Json.fromString(message))))
 
 }

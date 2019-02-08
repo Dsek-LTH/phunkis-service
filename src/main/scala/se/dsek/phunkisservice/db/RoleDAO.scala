@@ -10,13 +10,20 @@ import scala.util.Try
 
 trait RoleDAO[N <: NamingStrategy] {
   def allRoles(mastery: Option[String]): List[Role]
+
   def activeRoles(mastery: Option[String]): List[Role]
-  def addRole(name: String, isCurrent: Boolean, mastery: String, term: String, description: String,
+
+  def addRole(name: String,
+              isCurrent: Boolean,
+              mastery: String,
+              term: String,
+              description: String,
               maxPeople: Option[Int]): Option[Long]
 }
 
-
-private class RoleDAOImpl(val ctx: MysqlJdbcContext[SnakeCase]) extends DBUtil[SnakeCase] with RoleDAO[SnakeCase] {
+private class RoleDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
+  extends DBUtil[SnakeCase]
+    with RoleDAO[SnakeCase] {
 
   import ctx._
 
@@ -24,23 +31,36 @@ private class RoleDAOImpl(val ctx: MysqlJdbcContext[SnakeCase]) extends DBUtil[S
   lazy private val activeRoles = quote(roles.filter(_.isCurrent))
 
   override def activeRoles(mastery: Option[String]): List[Role] =
-    mastery.fold(ctx.run(activeRoles))(m => ctx.run(activeRoles.filter(_.mastery == lift(m))))
+    mastery.fold(ctx.run(activeRoles))(m =>
+      ctx.run(activeRoles.filter(_.mastery == lift(m))))
 
   override def allRoles(mastery: Option[String]): List[Role] =
-    mastery.fold(ctx.run(roles))(m => ctx.run(roles.filter(_.mastery == lift(m))))
+    mastery.fold(ctx.run(roles))(m =>
+      ctx.run(roles.filter(_.mastery == lift(m))))
 
-  override def addRole(name: String, isCurrent: Boolean, mastery: String, term: String, description: String,
-                       maxPeople: Option[Index]): Option[Long] = Try(ctx.run(
-    roles.insert(lift(Role(0L, name, isCurrent, mastery, term, description, maxPeople)))
-      .returning(_.uid)
-  )).toOption
+  override def addRole(name: String,
+                       isCurrent: Boolean,
+                       mastery: String,
+                       term: String,
+                       description: String,
+                       maxPeople: Option[Index]): Option[Long] =
+    Try(
+      ctx.run(
+        roles
+          .insert(lift(
+            Role(0L, name, isCurrent, mastery, term, description, maxPeople)))
+          .returning(_.uid)
+      )).toOption
 }
 
 object RoleDAO {
-  def apply(dataSource: DataSource with Closeable): RoleDAO[SnakeCase] = new RoleDAOImpl(
-    new MysqlJdbcContext(SnakeCase, dataSource)
-  )
-  private[db] lazy val createTable: String = """CREATE TABLE roles (
+  def apply(dataSource: DataSource with Closeable): RoleDAO[SnakeCase] =
+    new RoleDAOImpl(
+      new MysqlJdbcContext(SnakeCase, dataSource)
+    )
+
+  private[db] lazy val createTable: String =
+    """CREATE TABLE roles (
              uid INT unsigned NOT NULL primary key AUTO_INCREMENT,
              name VARCHAR(150) NOT NULL,
              is_current BOOLEAN NOT NULL,

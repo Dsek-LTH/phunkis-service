@@ -20,7 +20,9 @@ trait RoleInstanceDAO[N <: NamingStrategy] {
   def relieveWorker(roleInstance: RoleInstance, date: Date): Boolean
 }
 
-class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase]) extends RoleInstanceDAO[SnakeCase] with DBUtil[SnakeCase] {
+class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
+  extends RoleInstanceDAO[SnakeCase]
+    with DBUtil[SnakeCase] {
 
 //  implicit val test = ctx.dateDecoder
   //implicit val test2 = ctx.dateEncoder
@@ -54,23 +56,32 @@ class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase]) extends RoleInst
     roleInstanceSchema.filter(_.endDate > lift(new Date()))
   )
 
-  def insertInstance(roleInstance: RoleInstance): Try[RoleInstance] = Try(ctx.run(
-    roleInstanceSchema.insert(lift(roleInstance))
-  )).map(_ => roleInstance) // shouldn't have to do this... dirty fix for now
+  def insertInstance(roleInstance: RoleInstance): Try[RoleInstance] =
+    Try(
+      ctx.run(
+        roleInstanceSchema.insert(lift(roleInstance))
+      ))
+      .map(_ => roleInstance) // shouldn't have to do this... dirty fix for now
 
-  def relieveWorker(roleInstance: RoleInstance, date: Date): Boolean = Try(ctx.run(
-    roleInstanceSchema.filter(ri => ri.role == lift(roleInstance.role) &&
-      ri.user == lift(roleInstance.user) &&
-      ri.startDate == lift(roleInstance.startDate) &&
-      ri.endDate == lift(roleInstance.endDate)
-    ).update(_.endDate -> lift(date))
-  )).isSuccess
+  def relieveWorker(roleInstance: RoleInstance, date: Date): Boolean =
+    Try(
+      ctx.run(
+        roleInstanceSchema
+          .filter(
+            ri =>
+              ri.role == lift(roleInstance.role) &&
+                ri.user == lift(roleInstance.user) &&
+                ri.startDate == lift(roleInstance.startDate) &&
+                ri.endDate == lift(roleInstance.endDate))
+          .update(_.endDate -> lift(date))
+      )).isSuccess
 }
 
 object RoleInstanceDAO {
-  def apply(dataSource: DataSource with Closeable): RoleInstanceDAO[SnakeCase] = new RoleInstanceDAOImpl(
-    new MysqlJdbcContext(SnakeCase, dataSource)
-  )
+  def apply(dataSource: DataSource with Closeable): RoleInstanceDAO[SnakeCase] =
+    new RoleInstanceDAOImpl(
+      new MysqlJdbcContext(SnakeCase, dataSource)
+    )
 
   private[db] lazy val createTable =
     """CREATE TABLE role_instances (
