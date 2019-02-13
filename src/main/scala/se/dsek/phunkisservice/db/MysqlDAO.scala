@@ -37,7 +37,7 @@ import sangria.marshalling.DateSupport
 
 import scala.util.Try
 
-trait DBUtil[N <: NamingStrategy] {
+trait MysqlDAO[N <: NamingStrategy] {
   protected val ctx: MysqlJdbcContext[N]
   import ctx._
   import DBUtil._
@@ -51,8 +51,9 @@ trait DBUtil[N <: NamingStrategy] {
     // scalastyle:on
   }
 
-  val roleSchema = quote(querySchema[Role]("roles"))
-  val roleInstanceSchema = quote(querySchema[RoleInstance]("role_instances"))
+  protected val roleSchema = quote(querySchema[Role]("roles"))
+  protected val roleInstanceSchema = quote(
+    querySchema[RoleInstance]("role_instances"))
 }
 
 object DBUtil {

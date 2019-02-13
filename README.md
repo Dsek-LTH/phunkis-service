@@ -23,6 +23,9 @@ To autoformat the code, simply run `sbt phunkis-service/scalafmt`.
 When you run the linters they will output warnings in the console, however Scapegoat will also output
 a handy HTML report in [target/scala-2.12/scapegoat-report/scapegoat.html](target/scala-2.12/scapegoat-report/scapegoat.html), if you find it easier to read that way.
 
+TODO: Set up consistent configs between linters and autoformatter. Currently scalastyle wants to have braces on all
+if expressions, while scalafmt removes them on one-liners.
+
 ## Major libraries
 This service uses [Akka HTTP](https://doc.akka.io/docs/akka-http/current/introduction.html) for HTTP routing, although it could be relevant to look into switching to [Play](https://www.playframework.com/).
 The endpoints serve JSON over GraphQL, with the help of [Sangria](https://sangria-graphql.org/). [Quill](https://github.com/getquill/quill) is used together with JDBC for database access. 

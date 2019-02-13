@@ -9,7 +9,7 @@ import se.dsek.phunkisservice.model.RoleInstance
 
 import scala.util.Try
 
-trait RoleInstanceDAO[N <: NamingStrategy] {
+trait RoleInstanceDAO {
   def currentRoles(userId: String): List[Long]
   def allRoles(userId: String): List[RoleInstance]
   def currentWorkers(roleId: Long): List[String]
@@ -21,8 +21,8 @@ trait RoleInstanceDAO[N <: NamingStrategy] {
 }
 
 class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
-    extends RoleInstanceDAO[SnakeCase]
-    with DBUtil[SnakeCase] {
+    extends RoleInstanceDAO
+    with MysqlDAO[SnakeCase] {
 
   import ctx._
   //import DBUtil._
@@ -74,7 +74,7 @@ class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
 }
 
 object RoleInstanceDAO {
-  def apply(dataSource: DataSource with Closeable): RoleInstanceDAO[SnakeCase] =
+  def apply(dataSource: DataSource with Closeable): RoleInstanceDAO =
     new RoleInstanceDAOImpl(
       new MysqlJdbcContext(SnakeCase, dataSource)
     )

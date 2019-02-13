@@ -28,7 +28,7 @@ import scala.util.{Failure, Success}
 import GraphQLRequestUnmarshaller._
 import sangria.schema.Schema
 import sangria.slowlog.SlowLog
-import se.dsek.phunkisservice.db.{DBUtil, RoleDAO, RoleInstanceDAO}
+import se.dsek.phunkisservice.db.{DBUtil, MysqlDAO, RoleDAO, RoleInstanceDAO}
 import com.typesafe.config.ConfigFactory
 
 import scala.reflect.internal.util.NoPosition

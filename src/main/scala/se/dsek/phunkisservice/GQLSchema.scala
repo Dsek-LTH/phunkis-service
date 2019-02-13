@@ -36,9 +36,9 @@ object GQLSchema {
   private val endDate = Argument("endDate", LongType)
   private val endDate2 = Argument("relieveDate", LongType)
 
-  val roleInstanceQueryType: ObjectType[RoleInstanceDAO[_], Unit] = ObjectType(
+  val roleInstanceQueryType: ObjectType[RoleInstanceDAO, Unit] = ObjectType(
     "Query",
-    fields[RoleInstanceDAO[_], Unit](
+    fields[RoleInstanceDAO, Unit](
       Field(
         "currentRoles",
         ListType(LongType),
@@ -70,10 +70,10 @@ object GQLSchema {
     )
   )
 
-  val roleInstanceMutationType: ObjectType[RoleInstanceDAO[_], Unit] =
+  val roleInstanceMutationType: ObjectType[RoleInstanceDAO, Unit] =
     ObjectType(
       "Mutation",
-      fields[RoleInstanceDAO[_], Unit](
+      fields[RoleInstanceDAO, Unit](
         Field(
           "elect",
           OptionType(roleInstanceType),
@@ -115,7 +115,7 @@ object GQLSchema {
 
   private val roleQueryType = ObjectType(
     "Query",
-    fields[RoleDAO[_], Unit](
+    fields[RoleDAO, Unit](
       Field(
         "allRoles",
         ListType(roleType),
@@ -144,7 +144,7 @@ object GQLSchema {
 
   private val roleMutationType = ObjectType(
     "Mutation",
-    fields[RoleDAO[_], Unit](
+    fields[RoleDAO, Unit](
       Field(
         "addRole",
         OptionType(LongType),
