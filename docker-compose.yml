@@ -1,0 +1,19 @@
+version: '3'
+services:
+  phunkis-service:
+    image: phunkis-service:latest<localBuild>
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      JDBC_URL: jdbc:mysql://db/phunkis
+  db:
+    image: mysql/mysql-server:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: phunkis
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: password
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"

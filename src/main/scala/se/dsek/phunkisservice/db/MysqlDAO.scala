@@ -115,12 +115,20 @@ object DBUtil {
     ds.setURL(url)
     ds.setUser(user)
     ds.setPassword(password)
-    val conn = ds.getConnection
     logger.info("testing connection...")
+    val conn = waitUntilReady(ds).get
     logger.debug(s"connection: $conn")
     logger.debug(s"close: ${conn.close()}")
     logger.info("connection opened and closed without errors")
     new CloseableMySQLDataSource(ds)
+  }
+
+  private def waitUntilReady(ds: DataSource, sleepTime: Int = 500): Try[Connection] = {
+    logger.info(s"Sleeping $sleepTime ms to wait for DB to start up...")
+    Thread.sleep(sleepTime)
+    Try(ds.getConnection)
+      .recoverWith({case e: com.mysql.jdbc.exceptions.jdbc4.CommunicationsException =>
+        waitUntilReady(ds, sleepTime * 2)})
   }
 
   class CloseableMySQLDataSource(ds: DataSource)

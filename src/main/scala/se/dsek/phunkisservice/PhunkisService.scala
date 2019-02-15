@@ -30,20 +30,19 @@ import sangria.schema.Schema
 import sangria.slowlog.SlowLog
 import se.dsek.phunkisservice.db.{DBUtil, MysqlDAO, RoleDAO, RoleInstanceDAO}
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 import scala.reflect.internal.util.NoPosition
 
 object PhunkisService extends CorsSupport {
   import scala.concurrent.ExecutionContext.Implicits.global
 
+  lazy private val logger = LoggerFactory.getLogger(PhunkisService.getClass)
+  lazy val config = ConfigFactory.load()
   implicit val system: ActorSystem = ActorSystem("sangria-server")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   def main(args: Array[String]): Unit = {
-
-    import system.dispatcher
-
-    val config = ConfigFactory.load()
     Class.forName("com.mysql.jdbc.Driver").getClass
     val db: DataSource with Closeable = DBUtil.makeDataSource(
       config.getString("mysql.url"),
@@ -83,9 +82,13 @@ object PhunkisService extends CorsSupport {
           redirect("/graphql", PermanentRedirect)
         }
 
+    val port = config.getInt("http.port")
+    logger.info(s"Attempting to bind port $port")
     Http().bindAndHandle(corsHandler(route),
                          "0.0.0.0",
-                         config.getInt("http.port"))
+                          port)
+      .onComplete({case Success(serverBinding) => logger.info("Successfully bound, serving content...")
+      case e: Failure[_] => logger.trace("Failure when binding!", e.exception)})
   }
 
   def executeGraphQL[T, U](
