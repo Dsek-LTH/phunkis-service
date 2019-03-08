@@ -19,6 +19,8 @@ trait RoleDAO {
               term: String,
               description: String,
               maxPeople: Option[Int]): Option[Long]
+
+  def getRole(id: Long): Option[Role]
 }
 
 private class RoleDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
@@ -51,6 +53,14 @@ private class RoleDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
             Role(0L, name, isCurrent, mastery, term, description, maxPeople)))
           .returning(_.uid)
       )).toOption
+
+  override def getRole(id: Long): Option[Role] = Try(ctx.run(
+    for {
+      role <- roles if (role.uid == lift(id))
+    } yield role
+  ))
+  .map(_.headOption)
+  .toOption.flatten
 }
 
 object RoleDAO {

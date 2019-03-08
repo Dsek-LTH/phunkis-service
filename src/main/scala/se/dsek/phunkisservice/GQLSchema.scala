@@ -55,7 +55,7 @@ object GQLSchema {
       ),
       Field(
         "currentUsers",
-        ListType(StringType),
+        ListType(roleInstanceType),
         description = Some("Returns all users currently holding this role"),
         arguments = roleId :: Nil,
         resolve = c => c.ctx.currentWorkers(c.arg(roleId))
@@ -131,7 +131,14 @@ object GQLSchema {
           "All roles that currently exist within the guild, or in a mastery"),
         arguments = maybeMastery :: Nil,
         resolve = c => c.ctx.activeRoles(c.arg(maybeMastery))
-      )
+      ),
+      Field(
+        "getRole",
+        OptionType(roleType),
+        description = Some("Get information about a role from its id"),
+        arguments = roleId :: Nil,
+        resolve = c => c.ctx.getRole(c.arg(roleId))
+      ),
     )
   )
 

@@ -12,7 +12,7 @@ import scala.util.Try
 trait RoleInstanceDAO {
   def currentRoles(userId: String): List[Long]
   def allRoles(userId: String): List[RoleInstance]
-  def currentWorkers(roleId: Long): List[String]
+  def currentWorkers(roleId: Long): List[RoleInstance]
   def allWorkers(roleId: Long): List[RoleInstance]
   def allInstances(): List[RoleInstance]
   def allCurrentInstances(): List[RoleInstance]
@@ -36,11 +36,10 @@ class RoleInstanceDAOImpl(val ctx: MysqlJdbcContext[SnakeCase])
   def allRoles(userId: String): List[RoleInstance] = ctx.run(
     roleInstanceSchema.filter(_.user == lift(userId))
   )
-  def currentWorkers(roleId: Long): List[String] = ctx.run(
+  def currentWorkers(roleId: Long): List[RoleInstance] = ctx.run(
     roleInstanceSchema
       .filter(_.role == lift(roleId))
       .filter(_.endDate > lift(new Date()))
-      .map(_.user)
   )
   def allWorkers(roleId: Long): List[RoleInstance] = ctx.run(
     roleInstanceSchema.filter(_.role == lift(roleId))
